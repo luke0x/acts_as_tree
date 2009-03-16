@@ -49,6 +49,16 @@ module ActiveRecord
           class_eval <<-EOV
             include ActiveRecord::Acts::Tree::InstanceMethods
 
+            validates_each "#{configuration[:foreign_key]}" do |record, attr, value|
+              if value
+                if record.id == value
+                  record.errors.add attr, ' cannot set same value as self.id'
+                elsif record.children.map {|c| c.id}.include?(value)
+                  record.errors.add attr, ' cannot set same value as children'
+                end
+              end
+            end
+
             def self.roots
               find(:all, :conditions => "#{configuration[:foreign_key]} IS NULL", :order => #{configuration[:order].nil? ? "nil" : %Q{"#{configuration[:order]}"}})
             end
